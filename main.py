@@ -28,12 +28,22 @@ def validate(text):
     return text
 
 
+def validate_written(target):
+    """Re-validate the file on disk: it must hold a non-empty line of
+    1-200 characters, or the run fails instead of shipping a bad entry."""
+    back = target.read_text(encoding="utf-8")
+    validate(back)
+    return back
+
+
 def write_entry(out_dir):
     """Write ENTRY to <out_dir>/entry.txt (no trailing newline)."""
+    validate(ENTRY)
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     target = out_dir / "entry.txt"
     target.write_text(ENTRY, encoding="utf-8")
+    validate_written(target)
     return target
 
 
@@ -52,7 +62,11 @@ def main(argv=None):
     )
     args = parser.parse_args(argv)
 
-    validate(ENTRY)
+    try:
+        validate(ENTRY)
+    except ValueError as exc:
+        print("invalid entry: %s" % exc, file=sys.stderr)
+        return 1
 
     if args.check:
         print("check ok: %d characters, 1 line" % len(ENTRY))
